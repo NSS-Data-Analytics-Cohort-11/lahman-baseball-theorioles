@@ -27,14 +27,13 @@ ON a.teamid = t.teamid
 -- 3. Find all players in the database who played at Vanderbilt University. Create a list showing each player’s first and last names as well as the total salary they earned in the major leagues. Sort this list in descending order by the total salary earned. Which Vanderbilt player earned the most money in the majors?
 
 WITH school_name AS (
-		SELECT playerid, schoolname, namefirst, namelast
+		SELECT DISTINCT playerid, namefirst, namelast, schoolname
 		FROM people
 		INNER JOIN collegeplaying
 		USING(playerid)
 		INNER JOIN schools
 		USING(schoolid)
 		WHERE schoolname ILIKE '%Vander%'
-		GROUP BY schoolname, namelast, namefirst, playerid
 		ORDER BY schoolname)
 
 SELECT people.namefirst, people.namelast, COALESCE(SUM(salaries.salary),0)::NUMERIC::MONEY AS total_salary
@@ -87,9 +86,58 @@ ORDER BY decade;
 -- 8. Using the attendance figures from the homegames table, find the teams and parks which had the top 5 average attendance per game in 2016 (where average attendance is defined as total attendance divided by number of games). Only consider parks where there were at least 10 games played. Report the park name, team name, and average attendance. Repeat for the lowest 5 average attendance.
 
 SELECT * FROM homegames LIMIT 10
-SELECT COUNT(DISTINCT park) FROM homegames
---there are 249 unique parks in homegames table
+SELECT * FROM parks LIMIT 10
+SELECT * FROM teams LIMIT 10
 
+SELECT COUNT(DISTINCT park) FROM homegames
+SELECT COUNT(DISTINCT team) FROM homegames
+SELECT * FROM homegames WHERE games<10
+--there are 249 unique parks and 148 unique teams in homegames table
+
+--Top 5
+SELECT 	
+	parks.park_name, 
+	teams.name AS team_name, 
+	SUM(homegames.attendance)/SUM(homegames.games) AS avg_att
+FROM parks
+JOIN homegames
+	USING(park)
+JOIN teams
+	ON homegames.team = teams.teamid
+WHERE homegames.games >= 10
+GROUP BY parks.park_name, teams.name
+ORDER BY avg_att DESC
+LIMIT 5;
+
+--Bottom 5
+SELECT 	
+	parks.park_name, 
+	teams.name AS team_name, 
+	SUM(homegames.attendance)/SUM(homegames.games) AS avg_att
+FROM parks
+JOIN homegames
+	USING(park)
+JOIN teams
+	ON homegames.team = teams.teamid
+WHERE homegames.games >= 10
+GROUP BY parks.park_name, teams.name
+HAVING SUM(homegames.attendance)/SUM(homegames.games)>1
+ORDER BY avg_att 
+LIMIT 5;
+
+--number of teams associated with each park
+SELECT 
+	parks.park_name, 
+	COUNT(teams.name) AS num_of_teams,
+	SUM(homegames.attendance)/SUM(homegames.games) AS avg_att
+FROM parks
+JOIN homegames
+USING(park)
+JOIN teams
+ON homegames.team = teams.teamid
+GROUP BY parks.park_name
+ORDER BY num_of_teams DESC
+LIMIT 20;
 
 
 -- 9. Which managers have won the TSN Manager of the Year award in both the National League (NL) and the American League (AL)? Give their full name and the teams that they were managing when they won the award.
