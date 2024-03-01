@@ -11,7 +11,7 @@ WITH school_name AS (
 		GROUP BY schoolname, namelast, namefirst, playerid
 		ORDER BY schoolname)
 
-SELECT people.namefirst, people.namelast, SUM(salaries.salary)::NUMERIC::MONEY AS total_salary
+SELECT people.namefirst, people.namelast, COALESCE(SUM(salaries.salary),0)::NUMERIC::MONEY AS total_salary
 FROM people
 LEFT JOIN salaries
 USING(playerid)
@@ -21,5 +21,6 @@ GROUP BY people.namefirst, people.namelast
 ORDER BY total_salary DESC;
 
 --Notes: 
---I did a left join of people on salaries because I did not want to omit players whose salary data was missing. I did an inner join on school name CTE which is already filtered to only players who went to Vanderbilt. The highest paid player is David Price at $81 Million. However, there are 9 (out of 24) palyers with no salary data listed. 
---I also cast the salaries as Money for a cleaner look. I needed to first cast it as numeric though becuase it was originally double precision and you cannot cast that as money directly. 
+--I did a left join of people on salaries because I did not want to omit players whose salary data was missing. I did an inner join on school name CTE which is already filtered to only players who went to Vanderbilt. The highest paid player is David Price at $81 Million. However, there are 9 (out of 24) players with no salary data listed. 
+--I also cast the salaries as Money for a cleaner look. I needed to first cast it as Numeric though becuase it was originally double precision and you cannot cast that as money directly. 
+--The coalesce function replaces null values with 0's
