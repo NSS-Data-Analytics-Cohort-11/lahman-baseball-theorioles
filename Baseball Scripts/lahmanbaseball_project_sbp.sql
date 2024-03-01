@@ -42,18 +42,18 @@ ON a.teamid = t.teamid;
 --Sort this list in descending order by the total salary earned. 
 --Which Vanderbilt player earned the most money in the majors?
 WITH school_name AS (
-		SELECT playerid, schoolname, namefirst, namelast
+		SELECT DISTINCT playerid, schoolname, namefirst, namelast
 		FROM people
 		INNER JOIN collegeplaying
 		USING(playerid)
 		INNER JOIN schools
 		USING(schoolid)
 		WHERE schoolname ILIKE '%Vander%'
-		GROUP BY schoolname, namelast, namefirst, playerid
 		ORDER BY schoolname)
-SELECT people.namefirst, people.namelast, SUM(salaries.salary)::NUMERIC::MONEY AS total_salary
+
+SELECT people.namefirst, people.namelast, COALESCE(SUM(salaries.salary),0)::NUMERIC::MONEY AS total_salary
 FROM people
-LEFT JOIN salaries
+INNER JOIN salaries
 USING(playerid)
 INNER JOIN school_name
 USING(playerid)
@@ -126,7 +126,9 @@ ORDER BY decade;
 
 --Question 9. Which managers have won the TSN Manager of the Year award in both the National League (NL) and 
 --the American League (AL)? Give their full name and the teams that they were managing when they won the award.
-
+SELECT *
+FROM people
+WHERE playerid = 'woodji01';
 
 --Answer:
 
