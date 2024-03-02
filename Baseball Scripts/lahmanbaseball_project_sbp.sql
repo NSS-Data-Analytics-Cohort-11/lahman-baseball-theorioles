@@ -126,11 +126,26 @@ ORDER BY decade;
 
 --Question 9. Which managers have won the TSN Manager of the Year award in both the National League (NL) and 
 --the American League (AL)? Give their full name and the teams that they were managing when they won the award.
-SELECT *
-FROM people
-WHERE playerid = 'woodji01';
+SELECT people.namefirst, people.namelast, teams.name, teams.lgid, awardsmanagers.yearid
+FROM
+	(SELECT playerid
+	FROM awardsmanagers
+	WHERE awardid = 'TSN Manager of the Year' 
+		AND lgid IN('NL', 'AL')
+	GROUP BY playerid
+	HAVING COUNT(DISTINCT lgid) > 1) AS mb
+INNER JOIN awardsmanagers ON mb.playerid = awardsmanagers.playerid
+INNER JOIN people ON awardsmanagers.playerid = people.playerid
+INNER JOIN managers ON people.playerid = managers.playerid 
+INNER JOIN teams ON managers.teamid = teams.teamid
+WHERE awardid = 'TSN Manager of the Year' 
+	AND awardsmanagers.lgid IN('NL', 'AL')
+	AND awardsmanagers.yearid = managers.yearid
+	AND teams.yearid = managers.yearid;
 
---Answer:
+--Answer: Jim Leland and Davey Johnson both won the TSN Manager of the Year Award in both the AL and Nl leagues. 
+--Jim Leyland won in the NL with the Pittsburgh Pirates, and he won in the AL with the Detroit Tigers. 
+--Davey Johnson won in the NL with the Washington Nationals, and he won in the AL with the Baltimore ORIOLES (the best team).
 
 
 --Question 10.Find all players who hit their career highest number of home runs in 2016. 
