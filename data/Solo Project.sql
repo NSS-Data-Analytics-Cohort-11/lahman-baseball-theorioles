@@ -212,7 +212,7 @@ ORDER BY MAX(teams.yearID)
 --It looks like the Braves started in Boston in 1912, then changed to Milwaukee in 1953, then again moved to Atlanta in 1966; Likewise, the dodgers started in Brooklyn in 1911 but moved to LA in 1958
 
 --I updated my query to loka t date ranges the teams were active. Since the latest debut date for a team in this list is 1969 (the Padres), all my queries will look only at data from 1970 onward. 
-SELECT DISTINCT teams.name,  MIN(teams.yearID), MAX(teams.yearID), MAX(teams.yearID)-MIN(teams.yearID) AS years_active
+SELECT DISTINCT teams.name,  MIN(teams.yearID), MAX(teams.yearID), MAX(teams.yearID)-MIN(teams.yearID)+1 AS years_active
 FROM teams
 WHERE teams.name ILIKE '%Orioles%'
 	OR teams.name ILIKE '%Mets%'
@@ -223,10 +223,47 @@ WHERE teams.name ILIKE '%Orioles%'
 GROUP BY teams.name
 ORDER BY MIN(teams.yearID) DESC;
 
+--2) List wins/losses for each team. 
 
---2) List wins/losses for each team
+--First I built on the above query as a CTE: 
+WITH class_teams AS (
+	SELECT DISTINCT teams.name
+	FROM teams
+	WHERE teams.name ILIKE '%Orioles%'
+		OR teams.name ILIKE '%Mets%'
+		OR teams.name ILIKE '%Dodgers%'
+		OR teams.name ILIKE '%Padres%'
+		OR teams.name ILIKE '%Cubs%'
+		OR teams.name ILIKE '%Braves%'
+	ORDER BY teams.name);
+
+--Then I build the main query to pull in team name, wins, world series wins, 
+
+SELECT * FROM teams LIMIT 10
+
+
+--I made sure to add a filter on my main query to only consider stats from 1970 onward
+
 --3) 
 
+
+
+
+--Other fun facts:
+
+--The Orioles are the 3rd longest running team in the database. 
+SELECT DISTINCT teams.name,  MIN(teams.yearID), MAX(teams.yearID), MAX(teams.yearID)-MIN(teams.yearID)+1 AS years_active
+FROM teams
+GROUP BY teams.name
+ORDER BY years_active DESC;
+
+--Also, 40 out of 139 teams were only active for one year! Most of these were before 1900 and all but one were before 1916 
+SELECT DISTINCT teams.name,  MIN(teams.yearID), MAX(teams.yearID), MAX(teams.yearID)-MIN(teams.yearID)+1 AS years_active
+FROM teams
+GROUP BY teams.name
+HAVING MAX(teams.yearID)-MIN(teams.yearID)+1 <=1
+AND MAX(teams.yearID) >=1900
+ORDER BY MAX(teams.yearID) DESC;
 
 
 
