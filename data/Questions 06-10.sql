@@ -10,7 +10,7 @@ INNER JOIN people
 ON batting.playerid = people.playerid
 WHERE batting.yearid = 2016
 GROUP BY people.namefirst, people.namelast, stolen_bases, caught_stealing
-HAVING batting.sb >= 20
+HAVING batting.sb + batting.cs >= 20
 ORDER BY successful_steals DESC
 LIMIT 10;
 
@@ -47,15 +47,16 @@ SELECT * FROM homegames WHERE games<10
 
 --Top 5
 SELECT 	
-	parks.park_name, 
+	DISTINCT parks.park_name, 
 	teams.name AS team_name, 
 	SUM(homegames.attendance)/SUM(homegames.games) AS avg_att
 FROM parks
-JOIN homegames
+INNER JOIN homegames
 	USING(park)
-JOIN teams
+INNER JOIN teams
 	ON homegames.team = teams.teamid
-WHERE homegames.games >= 10
+WHERE homegames.year = '2016'
+	AND homegames.games >= 10
 GROUP BY parks.park_name, teams.name
 ORDER BY avg_att DESC
 LIMIT 5;
@@ -110,6 +111,36 @@ WHERE awardid = 'TSN Manager of the Year'
 	AND awardsmanagers.lgid IN('NL', 'AL')
 	AND awardsmanagers.yearid = managers.yearid
 	AND teams.yearid = managers.yearid;
+	
+--updated query that also works: 
+SELECT people.namefirst, people.namelast, teams.name, teams.lgid, awardsmanagers.yearid
+FROM
+	(SELECT playerid
+	FROM awardsmanagers
+	WHERE awardid = 'TSN Manager of the Year'
+		AND lgid IN('NL', 'AL')
+	GROUP BY playerid
+	HAVING COUNT(DISTINCT lgid) > 1) AS mb
+INNER JOIN awardsmanagers ON mb.playerid = awardsmanagers.playerid
+INNER JOIN people ON awardsmanagers.playerid = people.playerid
+INNER JOIN managers ON people.playerid = managers.playerid AND awardsmanagers.yearid = managers.yearid
+INNER JOIN teams ON managers.teamid = teams.teamid AND teams.yearid = managers.yearid
+WHERE awardid = 'TSN Manager of the Year';
+
+--after class review:
+SELECT people.namefirst || ' ' || people.namelast AS full_name, teams.name, teams.lgid, awardsmanagers.yearid
+FROM
+	(SELECT playerid
+	FROM awardsmanagers
+	WHERE awardid = 'TSN Manager of the Year'
+		AND lgid IN('NL', 'AL')
+	GROUP BY playerid
+	HAVING COUNT(DISTINCT lgid) > 1) AS mb
+INNER JOIN awardsmanagers ON mb.playerid = awardsmanagers.playerid
+INNER JOIN people ON awardsmanagers.playerid = people.playerid
+INNER JOIN managers ON people.playerid = managers.playerid AND awardsmanagers.yearid = managers.yearid
+INNER JOIN teams ON managers.teamid = teams.teamid AND teams.yearid = managers.yearid
+WHERE awardid = 'TSN Manager of the Year';
 
 -- 10. Find all players who hit their career highest number of home runs in 2016. Consider only players who have played in the league for at least 10 years, and who hit at least one home run in 2016. Report the players' first and last names and the number of home runs they hit in 2016.
 
@@ -123,6 +154,42 @@ GROUP BY namefirst, namelast, yearID, days_played
 HAVING MAX(hr) > 1
 ORDER BY max_hr_in_a_year DESC;
 --There are 75 players who played for over 10 years that peaked in homeruns in 2016. Nelson Cruz has the highest number with 43 homeruns that year. 
+
+--alternative answer (Jessica)
+SELECT
+    p.namefirst || ' ' || p.namelast AS player_name,
+    b.hr AS home_runs_2016
+FROM batting AS b
+INNER JOIN people AS p ON b.playerID = p.playerid
+WHERE b.yearid = 2016
+	AND hr > 0
+	AND EXTRACT(YEAR FROM debut::date) <= 2016 - 9
+    AND b.hr = (
+        SELECT MAX(hr)
+        FROM batting
+        WHERE playerid = b.playerid)
+ORDER BY home_runs_2016 DESC;
+
+--alternative answer (Derek)
+WITH highest_2016 AS
+				/* return playerid and number of home runs if max was in 2016 */
+			(SELECT  playerid,
+						/* return hr when 2016 AND player hit their max hr */
+						CASE WHEN hr = MAX(hr) OVER (PARTITION BY playerid) AND yearid = 2016 THEN hr
+								END AS career_highest_2016
+				FROM batting
+				GROUP BY playerid, hr, yearid
+				ORDER BY playerid)
+
+SELECT  p.namefirst || ' ' || p.namelast AS name,
+		h.career_highest_2016 AS num_hr
+FROM highest_2016 AS h
+LEFT JOIN people AS p
+	ON h.playerid = p.playerid
+WHERE h.career_highest_2016 IS NOT NULL
+	AND h.career_highest_2016 > 0
+	AND DATE_PART('year', p.debut::DATE) <= 2007
+ORDER BY num_hr DESC;
 
 --just because I was curious I also identified who had the highest total number of homeruns across all years was Frank Thomas. However a quick google search claims a differnt number so this data might be incorrect. Barry Bonds is the real top homerun hitter (according to Wiki)
 SELECT namefirst, namelast, SUM(hr) AS total_hr
