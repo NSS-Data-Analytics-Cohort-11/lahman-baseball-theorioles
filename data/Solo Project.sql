@@ -172,3 +172,61 @@ ORDER BY total_hr DESC;
 --   *  Do teams that win the world series see a boost in attendance the following year? What about teams that made the playoffs? Making the playoffs means either being a division winner or a wild card winner.
 
 -- 13. It is thought that since left-handed pitchers are more rare, causing batters to face them less often, that they are more effective. Investigate this claim and present evidence to either support or dispute this claim. First, determine just how rare left-handed pitchers are compared with right-handed pitchers. Are left-handed pitchers more likely to win the Cy Young Award? Are they more likely to make it into the hall of fame?
+
+
+
+--Solo Project
+--I want to see if the teams we are all named after have stats in the database and if so lets compare how they performed
+--1) List all the teams, their names, years active, city, etc
+--Teams: Orioles, Mets, Dodgers, Padres, Cubs, Braves
+--I can't use an IN statement because you cannot combine a LIKE statement with an IN list. So I made the following query:
+SELECT DISTINCT teams.name
+FROM teams
+WHERE teams.name ILIKE '%Orioles%'
+	OR teams.name ILIKE '%Mets%'
+	OR teams.name ILIKE '%Dodgers%'
+	OR teams.name ILIKE '%Padres%'
+	OR teams.name ILIKE '%Cubs%'
+	OR teams.name ILIKE '%Braves%'
+ORDER BY teams.name;
+
+--I got the following list:
+-- "Atlanta Braves"
+-- "Baltimore Orioles"
+-- "Boston Braves"
+-- "Brooklyn Dodgers"
+-- "Chicago Cubs"
+-- "Los Angeles Dodgers"
+-- "Milwaukee Braves"
+-- "New York Mets"
+-- "San Diego Padres"
+
+--Ola made the point that some of these may be franchises that were bought up and moved cities, so I made a query to look at the years they were active to determine if I should include their stats together
+SELECT DISTINCT teams.name, MIN(teams.yearID), MAX(teams.yearID)
+FROM teams
+WHERE teams.name ILIKE '%Dodgers%'
+	OR teams.name ILIKE '%Braves%'
+GROUP BY teams.name
+ORDER BY MAX(teams.yearID)
+
+--It looks like the Braves started in Boston in 1912, then changed to Milwaukee in 1953, then again moved to Atlanta in 1966; Likewise, the dodgers started in Brooklyn in 1911 but moved to LA in 1958
+
+--I updated my query to loka t date ranges the teams were active. Since the latest debut date for a team in this list is 1969 (the Padres), all my queries will look only at data from 1970 onward. 
+SELECT DISTINCT teams.name,  MIN(teams.yearID), MAX(teams.yearID), MAX(teams.yearID)-MIN(teams.yearID) AS years_active
+FROM teams
+WHERE teams.name ILIKE '%Orioles%'
+	OR teams.name ILIKE '%Mets%'
+	OR teams.name ILIKE '%Dodgers%'
+	OR teams.name ILIKE '%Padres%'
+	OR teams.name ILIKE '%Cubs%'
+	OR teams.name ILIKE '%Braves%'
+GROUP BY teams.name
+ORDER BY MIN(teams.yearID) DESC;
+
+
+--2) List wins/losses for each team
+--3) 
+
+
+
+
