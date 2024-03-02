@@ -211,7 +211,7 @@ ORDER BY MAX(teams.yearID)
 
 --It looks like the Braves started in Boston in 1912, then changed to Milwaukee in 1953, then again moved to Atlanta in 1966; Likewise, the dodgers started in Brooklyn in 1911 but moved to LA in 1958
 
---I updated my query to loka t date ranges the teams were active. Since the latest debut date for a team in this list is 1969 (the Padres), all my queries will look only at data from 1970 onward. 
+--I updated my query to look at date ranges the teams were active. Since the latest debut date for a team in this list is 1969 (the Padres), all my queries will look only at data from 1970 onward. 
 SELECT DISTINCT teams.name,  MIN(teams.yearID), MAX(teams.yearID), MAX(teams.yearID)-MIN(teams.yearID)+1 AS years_active
 FROM teams
 WHERE teams.name ILIKE '%Orioles%'
@@ -225,27 +225,95 @@ ORDER BY MIN(teams.yearID) DESC;
 
 --2) List wins/losses for each team. 
 
---First I built on the above query as a CTE: 
+--First I built on the above query as a CTE, adding a filter to only show active teams: 
 WITH class_teams AS (
 	SELECT DISTINCT teams.name
 	FROM teams
+	INNER JOIN teamsfranchises
+	ON teams.name = teamsfranchises.franchname
 	WHERE teams.name ILIKE '%Orioles%'
 		OR teams.name ILIKE '%Mets%'
 		OR teams.name ILIKE '%Dodgers%'
 		OR teams.name ILIKE '%Padres%'
 		OR teams.name ILIKE '%Cubs%'
 		OR teams.name ILIKE '%Braves%'
-	ORDER BY teams.name);
+		AND teamsfranchises.active = 'Y'
+	ORDER BY teams.name)
+	
+--Then I build the main query to pull in team name, wins, world series wins. This is basically a self join using a CTE
 
---Then I build the main query to pull in team name, wins, world series wins, 
+--This query shows the number of stadiums associated with each active team: 
+WITH class_teams AS (
+	SELECT DISTINCT teams.name
+	FROM teams
+	INNER JOIN teamsfranchises
+	ON teams.name = teamsfranchises.franchname
+	WHERE teams.name ILIKE '%Orioles%'
+		OR teams.name ILIKE '%Mets%'
+		OR teams.name ILIKE '%Dodgers%'
+		OR teams.name ILIKE '%Padres%'
+		OR teams.name ILIKE '%Cubs%'
+		OR teams.name ILIKE '%Braves%'
+		AND teamsfranchises.active = 'Y'
+	ORDER BY teams.name)
+	
+SELECT DISTINCT class_teams.name, COUNT(DISTINCT park)
+FROM teams
+INNER JOIN class_teams
+USING(name)
+GROUP BY class_teams.name
+ORDER BY COUNT(DISTINCT park) DESC
 
-SELECT * FROM teams LIMIT 10
+--This one shows the most recent park associated with each team: 
+WITH class_teams AS (
+	SELECT DISTINCT teams.name
+	FROM teams
+	INNER JOIN teamsfranchises
+	ON teams.name = teamsfranchises.franchname
+	WHERE teams.name ILIKE '%Orioles%'
+		OR teams.name ILIKE '%Mets%'
+		OR teams.name ILIKE '%Dodgers%'
+		OR teams.name ILIKE '%Padres%'
+		OR teams.name ILIKE '%Cubs%'
+		OR teams.name ILIKE '%Braves%'
+		AND teamsfranchises.active = 'Y'
+	ORDER BY teams.name)
+	
+SELECT DISTINCT class_teams.name, park
+FROM teams
+INNER JOIN class_teams
+USING(name)
+GROUP BY class_teams.name, park
+HAVING MAX(yearID) = '2016'
+ORDER BY class_teams.name 
+
+--This query shows the total and average attendance of home games between 1970-2016
+WITH class_teams AS (
+	SELECT DISTINCT teams.name
+	FROM teams
+	INNER JOIN teamsfranchises
+	ON teams.name = teamsfranchises.franchname
+	WHERE teams.name ILIKE '%Orioles%'
+		OR teams.name ILIKE '%Mets%'
+		OR teams.name ILIKE '%Dodgers%'
+		OR teams.name ILIKE '%Padres%'
+		OR teams.name ILIKE '%Cubs%'
+		OR teams.name ILIKE '%Braves%'
+		AND teamsfranchises.active = 'Y'
+	ORDER BY teams.name)
+	
+SELECT DISTINCT class_teams.name, SUM(attendance) AS total_home_att, AVG(attendance)::integer as avg_home_att
+FROM teams
+INNER JOIN class_teams
+USING(name)
+WHERE yearID >=1970
+GROUP BY class_teams.name
+ORDER BY avg_home_att DESC
 
 
 --I made sure to add a filter on my main query to only consider stats from 1970 onward
 
 --3) 
-
 
 
 
