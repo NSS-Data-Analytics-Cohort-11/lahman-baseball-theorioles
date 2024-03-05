@@ -363,24 +363,85 @@ SELECT COUNT(*) FROM throw WHERE
 
 
 
-SELECT pe.fullname, sub.(notin)
 
+--Used For Bonus Presentation
+SELECT DISTINCT pe.fullname, h.category,h.votedby,h.yearid  --,t.name AS team_name
 FROM
+	(SELECT playerid,namegiven|| ' ' || namelast AS fullname, height
+	 FROM people
+	 ) as pe
 
-WITH sub AS
-(SELECT COUNT(playerid) AS notin ,playerid,category FROM public.halloffame
+INNER JOIN halloffame as h
+USING(playerid)
+WHERE h.inducted = 'Y'
+and h.votedby <> 'BBWAA'
+Order by h.yearid DESC
+
+
+
+-- and votes <needed
+-- and votedby = 'Veterans'
+--AND category ilike'Player'
+--GROUP BY h.category, pe.playerid
+--ORDER BY pe.playerid DESC
+
+
+
+SELECT DISTINCT pe.fullname, h.category,h.votedby  --,t.name AS team_name
+FROM
+	(SELECT playerid,namegiven|| ' ' || namelast AS fullname, height
+	 FROM people
+	 ) as pe
+
+INNER JOIN halloffame as h
+USING(playerid)
+WHERE h.inducted = 'Y'
+and h.votedby <> 'BBWAA'
+
+select count(playerid) from halloffame
+where inducted ='Y'
+and votedby = 'BBWAA'
+
+
+
+
+SELECT sub.playerid,sub.category,h.votedby
+(SELECT playerid,category, COUNT(playerid) AS notin 
+ FROM halloffame
 WHERE inducted = 'N'
+--and votedby <> 'BBWAA'
+-- and votes <needed
+-- and votedby = 'Veterans'
 --AND category ilike'Player'
 GROUP BY category, playerid
 ORDER BY COUNT(playerid) DESC
-limit 1) 
+) sub
+INNER JOIN halloffame as h
+USING(playerid)
+WHERE h.inducted = 'Y'
+and h.votedby <> 'BBWAA'
+ 
+ 
+ 
+ 
+ Select playerid, 
+ 
+ 
 	
 
- WITH name as
- (SELECT playerid,namegiven|| ' ' || namelast AS fullname
-	)
-	
-select name.fullname,COUNT(playerid) AS notin ,playerid,category
+Select playerid, sub.fullname from
+ (SELECT playerid,namegiven|| ' ' || namelast AS fullname from people
+	)sub
+INNER JOIN halloffame as h
+USING(playerid)
+WHERE h.inducted = 'Y'
+and h.votedby <> 'BBWAA'
+ 
+ 
+ 
+ 
+ 
+select names.fullname,playerid,category--,COUNT(playerid) AS notin ,
 FROM people AS pe
 inner join halloffame AS h
 USING(playerid)
@@ -388,17 +449,27 @@ WHERE inducted = 'N'
 --AND category ilike'Player'
 GROUP BY category, playerid
 ORDER BY COUNT(playerid)
-	 
+	
+	
+	
+	
+select yearid, playerid,category
+FROM halloffame
+WHERE inducted = 'N'
+and inducted = 'Y'
+
+
+
 
 
 
 select * from appearances
 where playerid = 'roushed01'
 
-SELECT * FROM public.halloffame
+SELECT * FROM halloffame
 --WHERE playerid = 'roushed01'
 WHERE playerid = 'youngro01'
 order by yearid
 
-select playerid, throws  from people
+select playerid throws  from people
 order by throws
