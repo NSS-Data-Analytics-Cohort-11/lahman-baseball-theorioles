@@ -222,5 +222,25 @@ ORDER BY num_hr DESC;
 --Personal presentation question.
 --Potential options: what height and weight obtain the best batting average, best salary, most homeruns(hr), most hit by pitches(hbp), most runs(r), most total games played (G_all), 
 
+
+
 SELECT
-FROM
+    p.namefirst || ' ' || p.namelast AS player_name, 
+    SUM(b.h) AS total_hits,
+	SUM(b.hr) AS total_hr,
+	SUM(b.ab) AS total_at_bats,
+	SUM(b.h2b) AS total_doubles,
+	SUM(b.h3b) AS total_triples,
+	SUM(b.rbi) AS total_RBI,
+	SUM(b.hbp) AS total_hit_by_pitch,
+	SUM(b.ibb) AS total_intentional_walks,
+	SUM(b.g) AS total_games_played,
+	p.height,
+	p.weight
+FROM batting AS b
+INNER JOIN people AS p ON b.playerID = p.playerid
+-- INNER JOIN salaries AS s on b.playerID = s.playerid
+WHERE weight BETWEEN 212 AND 227
+GROUP BY player_name, p.height, p.weight
+ORDER BY total_hits DESC
+LIMIT 10;
