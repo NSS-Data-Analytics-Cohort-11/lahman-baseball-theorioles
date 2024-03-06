@@ -109,7 +109,7 @@ WITH class_teams AS (
 		AND teamsfranchises.active = 'Y'
 	ORDER BY teams.name)
 	
-SELECT DISTINCT class_teams.name, SUM(attendance) AS total_home_att, AVG(attendance)::integer as avg_home_att
+SELECT DISTINCT class_teams.name, SUM(attendance) AS total_home_att, ROUND(AVG(attendance)::decimal/((2016-1970)+1),2) as avg_home_att
 FROM teams
 INNER JOIN class_teams
 USING(name)
@@ -117,7 +117,7 @@ WHERE yearID >=1970
 GROUP BY class_teams.name
 ORDER BY avg_home_att DESC
 
---checking my work to make sure attendance figures are accurate:
+--checking my work for null values to make sure attendance figures are accurate:
 SELECT * FROM teams WHERE teams.name IN('San Diego Padres','Atlanta Braves','New York Mets','Los Angeles Dodgers','Chicago Cubs','Baltimore Orioles') AND attendance IS NULL ORDER BY yearid
 --note there are ten records that have null attendance (but all are Oriole games before 1900, so they shouldn't affect the snapshot we are looking at above between 1970-2016)
 
@@ -131,7 +131,7 @@ WITH class_teams AS (
 		AND teamsfranchises.active = 'Y'
 	ORDER BY teams.name)
 	
-SELECT DISTINCT class_teams.name, SUM(homegames.attendance) AS total_home_att, AVG(homegames.attendance)::integer as avg_home_att
+SELECT DISTINCT class_teams.name, SUM(homegames.attendance) AS total_home_att, ROUND(AVG(homegames.attendance)::decimal/((2016-1970)+1),2) as avg_home_att
 FROM homegames
 INNER JOIN class_teams
 ON class_teams.teamid = homegames.team
@@ -140,8 +140,28 @@ GROUP BY class_teams.name
 ORDER BY avg_home_att DESC
 
 --3) Wins Vs. Losses 
---Which teams had the most overall wins vs. most losses?
+--This query shows what percentage of games were wins vs. losses for each team over the entire timespan (1970-2016), it also shows the number of times each team won their division, wildcard, league, and world series games
+SELECT teams.name, 
+	ROUND(SUM(w)::decimal/(SUM(w)::decimal+SUM(l)::decimal)*100, 2) AS percent_wins, 
+	ROUND(SUM(l)::decimal/(SUM(w)::decimal+SUM(l)::decimal)*100, 2) AS percent_losses, 
+	SUM(CASE WHEN divwin ='Y' THEN 1 ELSE 0 END) AS division_wins,
+	SUM(CASE WHEN wcwin ='Y' THEN 1 ELSE 0 END) AS wildcard_wins,
+	SUM(CASE WHEN lgwin ='Y' THEN 1 ELSE 0 END) AS leaguechamp_wins,
+	SUM(CASE WHEN wswin ='Y' THEN 1 ELSE 0 END) AS worldseries_wins
+FROM teams
+WHERE teams.yearid BETWEEN 1970 AND 2016 AND teams.name IN('San Diego Padres','Atlanta Braves','New York Mets','Los Angeles Dodgers','Chicago Cubs','Baltimore Orioles')
+GROUP BY teams.name
+ORDER BY percent_wins DESC
+		  
+-- DivWin         Division Winner (Y or N)
+-- WCWin          Wild Card Winner (Y or N)
+-- LgWin          League Champion(Y or N)
+-- WSWin          World Series Winner (Y or N)
 
+
+
+--This query confirms that there were no post season ties between 1970 and 2016
+SELECT SUM(ties) FROM seriespost WHERE yearid BETWEEN 1970 AND 2016 
 
 
 --What about wins/losses against the other 5 teams? 
@@ -174,7 +194,7 @@ INNER JOIN class_teams USING(teamid)
 GROUP BY class_teams.name
 ORDER BY COUNT(DISTINCT playerid) DESC
 
---give the full list of names including teams played for and what was thier year of induction
+--give the full list of names including teams they played for and what was thier year of induction
 WITH class_teams AS (
 	SELECT DISTINCT teams.name, teams.teamid
 	FROM teams
@@ -194,32 +214,15 @@ ORDER BY class_teams.name) as names_of_player_halloffamers
 INNER JOIN class_teams USING(teamid)
 ORDER BY playerid
 
---rearrange the list to list only the name of the team the player was playing for the year they were inducted
 
---First subquery or CTE the year they were inducted, then inner join halloffame(yearid) USING appearances(yearid) and INNER JOIN apperaances on teams USING teamid to get the team name the year they were inducted.
-
-WITH induction_year AS (SELECT DISTINCT halloffame.playerid, halloffame.yearid FROM halloffame WHERE inducted = 'Y' AND category ILIKE '%player%' AND halloffame.yearid >=1970)
 	
-SELECT DISTINCT people.playerid, people.namefirst || ' ' || people.namelast AS full_name, induction_year.yearid AS year_of_induction, teams.name AS team_at_year_of_induction		
-FROM induction_year
-LEFT JOIN people 
-USING(playerid) 
-INNER JOIN appearances
-USING (playerid)
-LEFT JOIN teams
-USING (teamid)
-WHERE teams.name IN('San Diego Padres','Atlanta Braves','New York Mets','Los Angeles Dodgers','Chicago Cubs','Baltimore Orioles') 
-ORDER BY year_of_induction DESC
 
-SELECT *
-FROM appearances
-RIGHT JOIN teams
-USING (teamid)
-WHERE teams.name ILIKE 'Baltimore Orioles' 
-AND appearances.yearid = 2016
+--average number of games per year, per team is about 162
+SELECT name AS team_name, yearid AS year, g AS games
+FROM teams
+WHERE yearid BETWEEN 1970 AND 2016 AND name IN('San Diego Padres','Atlanta Braves','New York Mets','Los Angeles Dodgers','Chicago Cubs','Baltimore Orioles')
+ORDER BY team_name, yearid
  
- 
- , teams.name AS team_at_year_of_induction
 
 --The number of hall of fame players inducted each year since 1970
 SELECT halloffame.yearid, COUNT(halloffame.playerid) FROM halloffame WHERE inducted = 'Y' AND category ILIKE '%player%' AND halloffame.yearid >=1970 GROUP BY halloffame.yearid ORDER BY yearid DESC
