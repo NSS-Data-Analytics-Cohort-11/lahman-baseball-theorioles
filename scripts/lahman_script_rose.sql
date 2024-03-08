@@ -365,7 +365,7 @@ SELECT COUNT(*) FROM throw WHERE
 
 
 --Used For Bonus Presentation
-SELECT DISTINCT pe.fullname, h.category,h.votedby,h.yearid  --,t.name AS team_name
+SELECT DISTINCT h.playerid, pe.fullname, h.category,h.votedby,h.yearid  --,t.name AS team_name
 FROM
 	(SELECT playerid,namegiven|| ' ' || namelast AS fullname, height
 	 FROM people
@@ -374,7 +374,7 @@ FROM
 INNER JOIN halloffame as h
 USING(playerid)
 WHERE h.inducted = 'Y'
-and h.votedby <> 'BBWAA'
+and h.votedby NOT IN ('BBWAA','Run Off')
 Order by h.yearid DESC
 
 
@@ -406,7 +406,7 @@ and votedby = 'BBWAA'
 
 
 SELECT sub.playerid,sub.category,h.votedby
-(SELECT playerid,category, COUNT(playerid) AS notin 
+(SELECT distinct playerid,category, COUNT(playerid) AS notin 
  FROM halloffame
 WHERE inducted = 'N'
 --and votedby <> 'BBWAA'
@@ -458,8 +458,9 @@ FROM halloffame
 WHERE inducted = 'N'
 and inducted = 'Y'
 
-
-
+SELECT DISTINCT(votedby) FROM halloffame
+WHERE inducted = 'Y'
+and votedby <> 'BBWAA'
 
 
 
@@ -467,7 +468,7 @@ select * from appearances
 where playerid = 'roushed01'
 
 SELECT * FROM halloffame
---WHERE playerid = 'roushed01'
+WHERE playerid = 'roushed01'
 WHERE playerid = 'youngro01'
 order by yearid
 
